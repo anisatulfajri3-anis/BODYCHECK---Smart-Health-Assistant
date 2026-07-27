@@ -19,7 +19,6 @@
       transition: background 0.5s, color 0.5s;
     }
     body.dark {background:#111; color:#eee;}
-    section {min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px;}
     .card {
       background: rgba(255,255,255,0.1);
       border-radius: 20px;
@@ -27,8 +26,8 @@
       margin: 20px auto;
       max-width: 700px;
       text-align: center;
-      backdrop-filter: blur(10px);
     }
+    input, select {padding:10px; margin:5px; border-radius:10px; border:none;}
     button {
       padding:12px 24px; border:none; border-radius:30px;
       background:#fff; color:#000; cursor:pointer; margin:5px;
@@ -43,128 +42,189 @@
     }
     .badge {
       display:inline-block; padding:10px; border-radius:50%; margin:10px;
-      font-size:24px; color:#fff;
+      font-size:24px; color:#fff; animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% {transform:scale(1);}
+      50% {transform:scale(1.2);}
+      100% {transform:scale(1);}
     }
     .badge.kurus {background:#00bfff;}
     .badge.normal {background:#00ff99;}
     .badge.overweight {background:#ffa500;}
     .badge.obesitas {background:#ff0066;}
-    img.icon {width:80px; margin:10px; cursor:pointer; transition:transform 0.3s;}
-    img.icon:hover {transform:scale(1.2);}
   </style>
 </head>
 <body>
 
   <div id="popup">Tetap semangat menjaga kesehatan 💪</div>
 
-  <!-- SLIDE 1: Landing -->
-  <section id="landing">
-    <div class="card">
-      <h1>BODYCHECK PRO</h1>
-      <h2>Smart Health Assistant</h2>
-      <p>Aplikasi kesehatan pintar untuk memantau tubuh dan gaya hidup sehat Anda.</p>
-      <img src="https://cdn-icons-png.flaticon.com/512/2966/2966486.png" class="icon" onclick="alert('Mulai perjalanan sehatmu sekarang!')">
-      <br>
-      <button onclick="document.getElementById('form').scrollIntoView({behavior:'smooth'})">Mulai Sekarang</button>
-      <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
-    </div>
-  </section>
+  <div class="card">
+    <h1>BODYCHECK PRO</h1>
+    <h2>Smart Health Assistant</h2>
+    <p>Masukkan data Anda untuk analisis kesehatan.</p>
+    <input type="text" id="nama" placeholder="Nama" required><br>
+    <input type="number" id="umur" placeholder="Umur (10-100)" required><br>
+    <select id="gender"><option>Pria</option><option>Wanita</option></select><br>
+    <input type="number" id="tinggi" placeholder="Tinggi (cm)" required><br>
+    <input type="number" id="berat" placeholder="Berat (kg)" required><br>
+    <button onclick="hitungBMI()">Hitung BMI</button>
+    <button onclick="exportPDF()">Export PDF</button>
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    
+    <div id="progressBar"><div id="progressFill"></div></div>
+    <p id="hasilBMI">Hasil akan muncul di sini...</p>
+    <div id="badgeArea"></div>
+    <canvas id="bmiChart" width="400" height="200"></canvas>
+    <canvas id="barChart" width="400" height="200"></canvas>
+    
+    <h3>Riwayat Pemeriksaan</h3>
+    <ul id="riwayatList"></ul>
+    <button onclick="resetRiwayat()">Reset Riwayat</button>
 
-  <!-- SLIDE 2: Tentang BMI -->
-  <section id="bmi">
-    <div class="card">
-      <h2>Tentang BMI</h2>
-      <p>BMI adalah Body Mass Index, rumus: Berat (kg) / Tinggi² (m²). 
-      Indeks ini digunakan untuk mengetahui kategori berat badan seseorang.</p>
-      <img src="https://cdn-icons-png.flaticon.com/512/1046/1046784.png" class="icon">
-    </div>
-  </section>
+    <h3>Kalkulator Kalori</h3>
+    <input type="range" min="1" max="5" value="3" id="aktivitas" oninput="updateKalori()">
+    <p id="kaloriOutput">Level aktivitas: 3</p>
+  </div>
 
-  <!-- SLIDE 3: Fakta Kesehatan -->
-  <section id="fakta">
-    <div class="card">
-      <h2>Fakta Kesehatan</h2>
-      <p>Kesehatan tubuh dipengaruhi oleh pola hidup seimbang.</p>
-      <img src="https://cdn-icons-png.flaticon.com/512/415/415733.png" class="icon" onclick="alert('Minum cukup air setiap hari!')">
-      <img src="https://cdn-icons-png.flaticon.com/512/1046/1046786.png" class="icon" onclick="alert('Konsumsi buah dan sayur segar!')">
-      <img src="https://cdn-icons-png.flaticon.com/512/1046/1046787.png" class="icon" onclick="alert('Tidur cukup untuk kesehatan mental!')">
-    </div>
-  </section>
+<script>
+function hitungBMI(){
+  let nama = document.getElementById('nama').value;
+  let umur = parseInt(document.getElementById('umur').value);
+  let tinggi = document.getElementById('tinggi').value / 100;
+  let berat = document.getElementById('berat').value;
+  let bmi = (berat / (tinggi * tinggi)).toFixed(1);
+  let status = "";
+  let rekomendasi = "";
 
-  <!-- SLIDE 4: Form Input -->
-  <section id="form">
-    <div class="card">
-      <h2>Form Input</h2>
-      <p>Masukkan data pribadi Anda untuk menghitung BMI dan kebutuhan kalori.</p>
-      <form id="healthForm">
-        <input type="text" id="nama" placeholder="Nama" required><br>
-        <input type="number" id="umur" placeholder="Umur (10-100)" required><br>
-        <select id="gender"><option>Pria</option><option>Wanita</option></select><br>
-        <input type="number" id="tinggi" placeholder="Tinggi (cm)" required><br>
-        <input type="number" id="berat" placeholder="Berat (kg)" required><br>
-        <button type="button" onclick="hitungBMI()">Hitung BMI</button>
-        <button type="button" onclick="exportPDF()">Export PDF</button>
-      </form>
-      <div id="progressBar"><div id="progressFill"></div></div>
-      <p id="hasilBMI">Hasil akan muncul di sini...</p>
-      <div id="badgeArea"></div>
-      <canvas id="bmiChart" width="400" height="200"></canvas>
-    </div>
-  </section>
+  if(bmi < 18.5) status = "Kurus";
+  else if(bmi < 25) status = "Normal";
+  else if(bmi < 30) status = "Overweight";
+  else status = "Obesitas";
 
-  <!-- SLIDE 5: Hasil BMI -->
-  <section id="hasil">
-    <div class="card">
-      <h2>Hasil BMI</h2>
-      <p>Hasil ini menunjukkan kategori berat badan Anda berdasarkan perhitungan BMI.</p>
-    </div>
-  </section>
+  if(status === "Kurus"){
+    rekomendasi = umur < 20 ? "Perbanyak nutrisi untuk pertumbuhan." : "Perhatikan asupan kalori agar tidak kekurangan energi.";
+  } else if(status === "Normal"){
+    rekomendasi = umur < 30 ? "Pertahankan pola hidup sehat dan aktif." : "Jaga pola makan seimbang dan rutin cek kesehatan.";
+  } else if(status === "Overweight"){
+    rekomendasi = umur < 30 ? "Kurangi makanan cepat saji, tingkatkan olahraga." : "Kontrol pola makan dan konsultasi bila perlu.";
+  } else {
+    rekomendasi = umur < 30 ? "Segera atur pola makan dan olahraga intensif." : "Waspada risiko penyakit, konsultasi dokter disarankan.";
+  }
 
-  <!-- SLIDE 6: Analisis Tubuh -->
-  <section id="analisis">
-    <div class="card">
-      <h2>Analisis Tubuh</h2>
-      <p>Keterangan tambahan: Kurus → risiko nutrisi, Normal → sehat, Overweight → kontrol pola makan, Obesitas → risiko penyakit.</p>
-      <img src="https://cdn-icons-png.flaticon.com/512/1046/1046785.png" class="icon">
-    </div>
-  </section>
+  document.getElementById('hasilBMI').innerHTML = 
+    `${nama}, Umur ${umur} tahun<br>BMI: ${bmi} (${status})<br><b>Rekomendasi:</b> ${rekomendasi}`;
 
-  <!-- SLIDE 7: Kalkulator Kalori -->
-  <section id="kalori">
-    <div class="card">
-      <h2>Kalkulator Kalori</h2>
-      <p>Masukkan data aktivitas harian untuk mengetahui kebutuhan kalori tubuh.</p>
-      <input type="range" min="1" max="5" value="3" id="aktivitas" oninput="updateKalori()">
-      <p id="kaloriOutput">Level aktivitas: 3</p>
-    </div>
-  </section>
+  let progress = Math.min((bmi/40)*100,100);
+  document.getElementById('progressFill').style.width = progress+"%";
 
-  <!-- SLIDE 8: Rekomendasi -->
-  <section id="rekomendasi">
-    <div class="card">
-      <h2>Rekomendasi Cerdas</h2>
-      <p>Olahraga ringan 3x seminggu, konsumsi sayur dan buah, kurangi gula dan lemak.</p>
-      <img src="https://cdn-icons-png.flaticon.com/512/1046/1046788.png" class="icon">
-    </div>
-  </section>
+  const ctx = document.getElementById('bmiChart').getContext('2d');
+  if(window.bmiChartInstance) window.bmiChartInstance.destroy();
+  window.bmiChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Nutrisi','Aktivitas','Tidur','Mental','BMI'],
+      datasets: [{
+        label: 'Profil Kesehatan',
+        data: [Math.random()*10,Math.random()*10,Math.random()*10,Math.random()*10,bmi/3],
+        backgroundColor: 'rgba(0,255,153,0.3)',
+        borderColor: '#00ff99'
+      }]
+    }
+  });
 
-  <!-- SLIDE 9: Riwayat -->
-  <section id="riwayat">
-    <div class="card">
-      <h2>Riwayat Pemeriksaan</h2>
-      <ul id="riwayatList"></ul>
-    </div>
-  </section>
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  if(window.barChartInstance) window.barChartInstance.destroy();
+  window.barChartInstance = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: ['BMI Anda'],
+      datasets: [{
+        label: 'Nilai BMI',
+        data: [bmi],
+        backgroundColor: '#ffa500'
+      }]
+    },
+    options: {scales:{y:{beginAtZero:true}}}
+  });
 
-  <!-- SLIDE 10: Penutup -->
-  <section id="penutup">
-    <div class="card">
-      <h2>Terima Kasih</h2>
-      <p>Tetap jaga kesehatan Anda bersama BODYCHECK PRO.</p>
-      <img src="https://cdn-icons-png.flaticon.com/
-            <img src="https://cdn-icons-png.flaticon.com/512/833/833472.png" class="icon" onclick="alert('Terima kasih sudah menggunakan BODYCHECK PRO!')">
-    </div>
-  </section>
+  let riwayat = JSON.parse(localStorage.getItem('riwayat')) || [];
+  riwayat.push({nama, umur, bmi, status, rekomendasi});
+  localStorage.setItem('riwayat', JSON.stringify(riwayat));
+  tampilkanRiwayat();
+
+  showPopup();
+  tampilkanBadge(status);
+}
+
+function tampilkanRiwayat(){
+  let riwayat = JSON.parse(localStorage.getItem('riwayat')) || [];
+  let list = document.getElementById('riwayatList');
+  list.innerHTML = "";
+  riwayat.forEach(r => {
+    let li = document.createElement('li');
+    li.innerHTML = `${r.nama} (Umur ${r.umur}) - BMI: ${r.bmi} (${r.status})`;
+    list.appendChild(li);
+  });
+}
+
+function resetRiwayat(){
+  localStorage.removeItem('riwayat');
+  tampilkanRiwayat();
+  alert("Riwayat berhasil direset!");
+}
+
+function exportPDF(){
+  html2canvas(document.querySelector(".card")).then(canvas=>{
+      const imgData = canvas.toDataURL("image/png");
+  const pdf = new jspdf.jsPDF();
+  pdf.addImage(imgData, 'PNG', 10, 10, 180, 160);
+  pdf.save("hasil_bodycheck.pdf");
+  });
+}
+
+function toggleDarkMode(){
+  document.body.classList.toggle("dark");
+}
+
+function showPopup(){
+  let messages = [
+    "Tetap semangat menjaga kesehatan 💪",
+    "Kesehatan adalah investasi terbaik 🌱",
+    "Langkah kecil menuju hidup sehat 🚶",
+    "Stay strong and keep moving 🏃"
+  ];
+  let popup = document.getElementById("popup");
+  popup.innerHTML = messages[Math.floor(Math.random()*messages.length)];
+  popup.style.display = "block";
+  setTimeout(()=>{popup.style.display="none";},3000);
+}
+
+function tampilkanBadge(status){
+  let badgeArea = document.getElementById("badgeArea");
+  badgeArea.innerHTML = "";
+  let badge = document.createElement("div");
+  badge.classList.add("badge");
+  if(status==="Kurus") badge.classList.add("kurus"), badge.innerHTML="🥗";
+  else if(status==="Normal") badge.classList.add("normal"), badge.innerHTML="🏆";
+  else if(status==="Overweight") badge.classList.add("overweight"), badge.innerHTML="⚖️";
+  else badge.classList.add("obesitas"), badge.innerHTML="❤️‍🔥";
+  badgeArea.appendChild(badge);
+}
+
+function updateKalori(){
+  let level = document.getElementById('aktivitas').value;
+  document.getElementById('kaloriOutput').innerHTML = "Level aktivitas: " + level;
+}
+
+function resetRiwayat(){
+  localStorage.removeItem('riwayat');
+  tampilkanRiwayat();
+  alert("Riwayat berhasil direset!");
+}
+
+tampilkanRiwayat();
+</script>
 
 </body>
 </html>
